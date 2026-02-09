@@ -11,6 +11,7 @@
 
 #include "privilege_manager.h"
 #include "settings_manager.h"
+#include "dns_manager.h"
 
 int main(int argc, char *argv[])
 {
@@ -48,11 +49,23 @@ int main(int argc, char *argv[])
         }
     }
 
+    // 在获得管理员权限后，设置DNS为0.0.0.0
+    DnsManager dnsManager;
+    if (settingsManager.runAsAdmin() && privilegeManager.isRunningAsAdmin()) {
+        if (!dnsManager.setDnsTo000()) {
+            qWarning() << "Warning: Failed to set DNS -" << dnsManager.getLastError();
+            QMessageBox::warning(nullptr, QMessageBox::tr("DNS Warning"),
+                                 QMessageBox::tr("Failed to set DNS to 0.0.0.0: ") + dnsManager.getLastError());
+        } else {
+            qDebug() << "DNS successfully set to 0.0.0.0";
+        }
+    }
+
     QTranslator translator;
     const QStringList uiLanguages = QLocale::system().uiLanguages();
     for (const QString &locale : uiLanguages) {
         const QString baseName = "qsing-box_" + QLocale(locale).name();
-        if (translator.load(":/i18n/" + baseName)) {
+        if (translator.load("qml/" + baseName)) {
             app.installTranslator(&translator);
             break;
         }
